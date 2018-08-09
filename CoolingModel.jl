@@ -2,8 +2,9 @@
 ## ---
 
     using StatGeochem
-    include("Utilities.jl")
+    include("Utilities.j")
     using Plots; gr()
+    using LaTeXStrings
 
 ## --- Define physical parameters
 
@@ -57,7 +58,7 @@
 
     Tm = CoolingModel(p, Rc, Ur[nSteps], Hmvec, dt, timevec)
     h = plot(TrelObs_time, TrelObs, yerror=2*TrelObs_sigma, seriestype=:scatter, markersize=2, markerstrokecolor=:auto, label="data")
-    plot!(h, timevec/1000,Tm-Tm[1], label="model", xlabel="Age (Ma)", ylabel="Delta T (C)", legend=:topleft)
+    plot!(h, timevec/1000,Tm-Tm[1], label="mode", xlabel="Age (Ma)", ylabel="\\Delta T (C)", legend=:topleft)
     xlims!(h,(0,4))
     display(h)
     print("Urey Ratio convergence:\n")
@@ -79,12 +80,12 @@
         Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec);
         plotTrel = downsample(Tm-Tm[1],50)
         if i==1
-            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Mode") #color=cmap[i]
         else
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
     ylims!(h,(-20, 300))
     xlims!(h,(0,4))
     display(h)
@@ -107,12 +108,12 @@
         Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec);
         plotTrel = downsample(Tm-Tm[1],50)
         if i==1
-            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Mode") #color=cmap[i]
         else
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -138,12 +139,12 @@
         # Plot the resutls
         plotTrel = downsample(Tm-Tm[1],50)
         if i==1
-            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model")
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Mode")
         else
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="")
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -182,14 +183,14 @@
 
         plotTrel = downsample(Tm-Tm[1],50)
         if n == n_difficulties
-            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Mode")
         else
             plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
         end
         Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
         R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -242,14 +243,14 @@
 
         plotTrel = downsample(Tm-Tm[1],50)
         if n == n_difficulties
-            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Mode")
         else
             plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
         end
         Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
         R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
