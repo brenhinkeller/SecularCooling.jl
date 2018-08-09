@@ -36,31 +36,31 @@ end
 Parameters(x) = Parameters(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)
 
 function CoolingModel(p::Parameters, Rc, Ur, Hm, dt, timevec)
-    a_c = 4pi * Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc;
+    a_c = 4pi * Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
 
     # Allocate arrays
-    Qc = Array{Float64}(size(timevec));
-    Qm = Array{Float64}(size(timevec));
-    dTm_dt = Array{Float64}(size(timevec));
-    dTc_dt = Array{Float64}(size(timevec));
-    mu_u = Array{Float64}(size(timevec));
-    mu_l = Array{Float64}(size(timevec));
-    Tm = Array{Float64}(size(timevec));
-    Tc = Array{Float64}(size(timevec));
-    dp = Array{Float64}(size(timevec));
+    Qc = Array{Float64}(size(timevec))
+    Qm = Array{Float64}(size(timevec))
+    dTm_dt = Array{Float64}(size(timevec))
+    dTc_dt = Array{Float64}(size(timevec))
+    mu_u = Array{Float64}(size(timevec))
+    mu_l = Array{Float64}(size(timevec))
+    Tm = Array{Float64}(size(timevec))
+    Tc = Array{Float64}(size(timevec))
+    dp = Array{Float64}(size(timevec))
 
     # Variable parameters to adjust
 
-    Qm[1] = 35*10^12; # Present mantle heat flux (W)
-    Qc[1] = 6*10^12; # Present core heat flux (W)
-    Tm[1] = 1300+273.15; # Present mantle temperature (K)
-    Tc[1] = 4400+273.15; # Present core temperature (K)
-    # dp[1] = 120E3 + 275*(Tm[1]-(1400+273.15));  # Old equation from Davies
-    dp[1] = 115E3 + 275*(Tm[1]-(1400+273.15)) + (Tm[1]<(1410+273.15)).*(0.003649*(Tm[1]-273.15).^2 -10.4*(Tm[1]-273.15) + 7409.5); # Piecewise fit to Korenaga
-    mu_u[1] = p.mur_u * exp(p.Ea/p.R*(1/Tm[1]-1/p.Tru));
-    mu_l[1] = p.mur_l * exp(p.Ha/p.R*(1/Tc[1]-1/p.Trl));
-    dTc_dt[1] = (p.Mc.*0 - Qc[1]) / (p.Xc * p.Mc * p.C_c) * p.s_yr*1E6;
-    epsilon = Tm[1]^2 / (p.Ha/p.R*(Tc[1]-Tm[1]));
+    Qm[1] = 35*10^12 # Present mantle heat flux (W)
+    Qc[1] = 6*10^12 # Present core heat flux (W)
+    Tm[1] = 1300+273.15 # Present mantle temperature (K)
+    Tc[1] = 4400+273.15 # Present core temperature (K)
+    # dp[1] = 120E3 + 275*(Tm[1]-(1400+273.15))  # Old equation from Davies
+    dp[1] = 115E3 + 275*(Tm[1]-(1400+273.15)) + (Tm[1]<(1410+273.15)).*(0.003649*(Tm[1]-273.15).^2 -10.4*(Tm[1]-273.15) + 7409.5) # Piecewise fit to Korenaga
+    mu_u[1] = p.mur_u * exp(p.Ea/p.R*(1/Tm[1]-1/p.Tru))
+    mu_l[1] = p.mur_l * exp(p.Ha/p.R*(1/Tc[1]-1/p.Trl))
+    dTc_dt[1] = (p.Mc.*0 - Qc[1]) / (p.Xc * p.Mc * p.C_c) * p.s_yr*1E6
+    epsilon = Tm[1]^2 / (p.Ha/p.R*(Tc[1]-Tm[1]))
     Beta_c = Qc[1] /
         (a_c * epsilon^(4*p.nc) * ((Tc[1]-Tm[1])^(1+p.nc) / mu_l[1]^p.nc))
     Beta_d = Qm[1] /
@@ -69,19 +69,19 @@ function CoolingModel(p::Parameters, Rc, Ur, Hm, dt, timevec)
                 (4*mu_u[1]*p.kappa + (4/3*p.eta_L*p.kappa)*(dp[1]/Rc)^3)
             )^(1/2)
         )
-    Hm = Hm .* Ur / (Hm[1]*p.Mm/Qm[1]);
+    Hm = Hm .* Ur / (Hm[1]*p.Mm/Qm[1])
     dTm_dt[1] = (p.Mm.*Hm[1] + Qc[1] - Qm[1]) /
         (p.Xm * p.Mm * p.C_m) * p.s_yr * 1E6
 
     for i=2:length(timevec)
-        Tm[i] = Tm[i-1] - dTm_dt[i-1]*dt; # New mantle temperature
-        Tc[i] = Tc[i-1] - dTc_dt[i-1]*dt; # New core temperature
-        mu_l[i] = p.mur_l * exp(p.Ha/p.R*(1/Tc[i]-1/p.Trl));
-        epsilon = Tm[i]^2 / (p.Ha/p.R*(Tc[i]-Tm[i]));
+        Tm[i] = Tm[i-1] - dTm_dt[i-1]*dt # New mantle temperature
+        Tc[i] = Tc[i-1] - dTc_dt[i-1]*dt # New core temperature
+        mu_l[i] = p.mur_l * exp(p.Ha/p.R*(1/Tc[i]-1/p.Trl))
+        epsilon = Tm[i]^2 / (p.Ha/p.R*(Tc[i]-Tm[i]))
         Qc[i] = Beta_c * a_c * abs(epsilon)^(4*p.nc) *
             abs(Tc[i]-Tm[i])^(1+p.nc) / abs(mu_l[i])^p.nc
         mu_u[i] = p.mur_u*exp(p.Ea/p.R*(1/Tm[i]-1/p.Tru))
-        # dp[i] = 120E3 + 275*(Tm[i]-(1400+273.15)); # Old equation from Davies
+        # dp[i] = 120E3 + 275*(Tm[i]-(1400+273.15)) # Old equation from Davies
         # Piecewise fit to Korenaga plate scaling
         dp[i] = 115E3 + 275*(Tm[i]-(1400+273.15)) +
             (Tm[i]<(1410+273.15)) .*

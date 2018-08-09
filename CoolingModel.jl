@@ -1,7 +1,9 @@
+    1+1
+## ---
+
     using StatGeochem
     include("Utilities.jl")
-    using Plots
-    gr();
+    using Plots; gr()
 
 ## --- Define physical parameters
 
@@ -40,7 +42,7 @@
     p.eta_L = 1E23; # Plate viscsity (Pa s)
     # Done defining parameters
 
-## --- Load observed cooling data to fit against
+## --- Load observed cooling against which to fit
 
     using MAT
     mcdbse = matread("mcdbse.mat")["mcdbse"]
@@ -63,11 +65,11 @@
     lambda232Th = log(2) / 1.405E10
 
     # Composition: Bulk Silicate Earth
-    K40i  = 0.00012 .* mcdbse["K"]  .* exp(lambda40K  .* timevec*10^6);
-    Rb87i = 0.27835 .* mcdbse["Rb"] .* exp(lambda87Rb .* timevec*10^6);
-    U235i = 0.00720 .* mcdbse["U"]  .* exp(lambda235U .* timevec*10^6);
-    U238i = 0.99274 .* mcdbse["U"]  .* exp(lambda238U .* timevec*10^6);
-    Th232i = mcdbse["Th"] .* exp(lambda232Th .* timevec*10^6)
+    K40i  = 0.00012 .* mcdbse["K"]  .* exp.(lambda40K  .* timevec*10^6);
+    Rb87i = 0.27835 .* mcdbse["Rb"] .* exp.(lambda87Rb .* timevec*10^6);
+    U235i = 0.00720 .* mcdbse["U"]  .* exp.(lambda235U .* timevec*10^6);
+    U238i = 0.99274 .* mcdbse["U"]  .* exp.(lambda238U .* timevec*10^6);
+    Th232i = mcdbse["Th"] .* exp.(lambda232Th .* timevec*10^6)
 
     # Mantle heat production in W/Kg, from Rybach, 1985
     Hmvec = 1000 .* K40i   ./10^6 .* lambda40K/p.s_yr  .* (0.6*0.8928 + 1.460*0.1072)*p.J_MeV*p.mol/40 +
@@ -99,233 +101,194 @@
     print("Urey Ratio convergence:\n")
     display(Ur)
 
-## --- Explore different Ur at high Rc
+## --- Explore different Ur at high d (8.0)
 
     Rc = (p.eta_L / (10.^8))^(1/3)
 
     nSteps = 10
     UrMin = 0.1
     UrMax = 0.5
-    Ur = linspace(UrMin,UrMax,nSteps)
-    cmap = resize_colormap(flipdim(viridis[1:212],1), nSteps)
-
-    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, markerstrokecolor=:auto, label="Data")
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    Ur = reverse(linspace(UrMin,UrMax,nSteps))
+    # cmap = resize_colormap(flipdim(viridis[1:212],1), nSteps)
+    cmap = cgrad(flipdim(viridis[1:212],1))
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkred, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
     for i=1:nSteps
         Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec);
+        plotTrel = downsample(Tm-Tm[1],50)
         if i==1
-            plot!(h,downsample(timevec/1000,10),downsample(Tm-Tm[1],10),color=cmap[i],label="Model")
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
         else
-            plot!(h,downsample(timevec/1000,10),downsample(Tm-Tm[1],10),color=cmap[i],label="")
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    ylims!(h,(-20, 300))
     xlims!(h,(0,4))
-    ylims!(h, (-20, 300))
     display(h)
 
-    plot!(h,colorbar=true,clims=(UrMin,UrMax),colorbar_title="",color_palette=flipdim(viridis[1:212],1))
-    display(h)
-    # cb.Label.String = 'Ur';
     savefig(h,"d=8variableUr.pdf")
 
-## --- Explore different Ur at low Rc
-
-    Rc =(p.eta_L./(10.^5.5)).^(1/3);
+## --- Explore different Ur at low d (5.5)
 
     nSteps = 10;
-    UrMin = 0.7555;
-    UrMax = 0.7558;
-    Ur = flipud(linspace(UrMin,UrMax,nSteps));
+    Rc = (p.eta_L / (10^5.5))^(1/3);
+    UrMin = 0.7555
+    UrMax = 0.7558
 
-    load viridis
-    cmap = flipud(viridis(1:212,:));
-    color = interpColor(cmap,nSteps);
-    figure; errorbar(TrelObs_time,TrelObs,2*TrelObs_sigma,'.r')
+    Ur = reverse(linspace(UrMin,UrMax,nSteps))
+    cmap = cgrad(flipdim(viridis[1:212],1))
+
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkred, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
     for i=1:nSteps
         Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec);
-        hold on; plot(timevec/1000,Tm-Tm[1],'color',color(i,:))
+        plotTrel = downsample(Tm-Tm[1],50)
+        if i==1
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
+        else
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
+        end
     end
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    xlims!(h,(0,4))
+    ylims!(h,(-20,250))
+    display(h)
+    savefig(h,"d=5.5variableUr.pdf")
 
-    ylim([-20 250])
 
-    xlabel('Age (Ga)'); ylabel('\Delta T');
-    colormap(cmap)
-    cb = colorbar;
-    cb.Label.String = 'Ur';
-    caxis([UrMin,UrMax])
-    formatfigure;
-    fig = gcf;
-    fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)];
-    saveas(gcf,'d=5.5variableUr.pdf')
-
-## --- Explore different Ur at low Rc
-
-    p.eta_L = 1E23; # Plate viscsity (Pa s)
-    Rc =(p.eta_L./(10.^5.6)).^(1/3);
+## --- Explore different Ur at low d (5.6)
 
     nSteps = 10;
-    UrMin = 0.753;
-    UrMax = 0.754;
-    Ur = flipud(linspace(UrMin,UrMax,nSteps));
+    Rc = (p.eta_L / (10^5.6))^(1/3)
+    UrMin = 0.753
+    UrMax = 0.754
 
-    load viridis
-    cmap = flipud(viridis(1:212,:));
-    color = interpColor(cmap,nSteps);
-    figure; errorbar(TrelObs_time,TrelObs,2*TrelObs_sigma,'.r')
+    Ur = reverse(linspace(UrMin,UrMax,nSteps))
+    cmap = cgrad(flipdim(viridis[1:212],1))
+
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkred, markersize=2, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
     for i=1:nSteps
-        Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec);
-        hold on; plot(timevec/1000,Tm-Tm[1],'color',color(i,:))
+        # Calculate the mantle temperature curve
+        Tm = CoolingModel(p,Rc,Ur[i],Hmvec,dt,timevec)
+
+        # Plot the resutls
+        plotTrel = downsample(Tm-Tm[1],50)
+        if i==1
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model")
+        else
+            plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="")
+        end
     end
-
-    ylim([-20 250])
-
-    xlabel('Age (Ga)'); ylabel('\Delta T');
-    colormap(cmap)
-    cb = colorbar;
-    cb.Label.String = 'Ur';
-    caxis([UrMin,UrMax])
-    formatfigure;
-    fig = gcf;
-    fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)];
-    saveas(gcf,'d=5.6variableUr.pdf')
-
-
-## --- Explore Rc space
-#
-#     p.eta_L = 1E23; # Plate viscsity (Pa s)
-#     nSteps = 20;
-#     dUr = 1E-9;
-#
-#     nDifficulties = 10;
-#     Rc_t = linspace(10E3,1000E3,nDifficulties);
-#     Ur_b = Array{Float64}(size(Rc_t));
-#
-#     load viridis
-#     color = interpColor(flipud(viridis(1:212,:)),nDifficulties);
-#     figure; errorbar(TrelObs_time,TrelObs,2*TrelObs_sigma,'.r')
-#     for n=1:nDifficulties
-#         Rc = Rc_t(n);
-#         Ur = 0.5;
-#         for i=1:nSteps-1;
-#             ll = CoolingModelLL(p, Rc,Ur,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-#             llp = CoolingModelLL(p, Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-#             dll_dUr = (llp-ll)/dUr;
-#             Ur = Ur - ll/dll_dUr/2;
-#         end
-#
-#         Ur_b(n) = Ur;
-#         Tm = CoolingModel(p,Rc,Ur,Hmvec,dt,timevec);
-#         hold on; plot(timevec/1000,Tm-Tm[1],'color',color(n,:))
-#     end
-#
-#     figure; plot(Rc_t,Ur_b)
-#     xlabel('Rc'); ylabel('Best fit Ur')
-#     figure; plot(log10(p.eta_L./Rc_t.^3),Ur_b)
-#     xlabel('\eta_l/Rc'); ylabel('Best fit Ur')
-
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    xlims!(h,(0,4))
+    ylims!(h,(-20,250))
+    display(h)
+    savefig(h,"d=5.6variableUr.pdf")
 
 ## --- Explore nl/Rc3 space
 
-    p.eta_L = 1E23; # Plate viscsity (Pa s)
-    nSteps = 40;
-    dUr = 1E-9;
+    p.eta_L = 1E23 # Plate viscsity (Pa s)
+    nSteps = 40
+    dUr = 1E-9
 
-#     nDifficulties = 10;
-#     Rc_t = linspace(100E3,1000E3,nDifficulties);
+    n_difficulties = 50
+    minDiff = 4
+    maxDiff = 9
+    difficulies = linspace(minDiff,maxDiff,n_difficulties)
 
-    nDifficulties = 50;
-#     nDifficulties = 100;
-    minDiff = 4;
-    maxDiff = 9;
-    Rc_t = (p.eta_L./(10.^linspace(minDiff,maxDiff,nDifficulties))).^(1/3);
-    Ur_b = Array{Float64}(size(Rc_t));
-    R_b = Array{Float64}(size(Rc_t));
+    Rc_t = (p.eta_L ./ (10 .^ difficulies)).^(1/3)
+    Ur_b = Array{Float64}(size(Rc_t))
+    R_b = Array{Float64}(size(Rc_t))
 
-    load viridis
-    cmap = flipud(viridis(1:212,:));
-    color = interpColor(cmap,nDifficulties);
-    figure; errorbar(TrelObs_time,TrelObs,2*TrelObs_sigma,'.r')
-    for n=1:nDifficulties
-        Rc = Rc_t(n);
-        Ur = 0.5;
-        for i=1:nSteps-1;
-            ll = CoolingModelLL(p, Rc,Ur,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-            llp = CoolingModelLL(p, Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-            dll_dUr = (llp-ll)/dUr;
-            Ur = Ur - ll/dll_dUr/2;
+    cmap = cgrad(flipdim(viridis[1:212],1))
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkred, markersize=2, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
+    for n=1:n_difficulties
+        Rc = Rc_t[n]
+        Ur = 0.5
+        for i=1:nSteps-1
+            ll = CoolingModelLL(p, Rc,Ur,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+            llp = CoolingModelLL(p, Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+            dll_dUr = (llp-ll)/dUr
+            Ur = Ur - ll/dll_dUr/2
         end
 
-        Ur_b(n) = Ur;
-        Tm = CoolingModel(p,Rc,Ur,Hmvec,dt,timevec);
-        hold on; plot(timevec/1000,Tm-Tm[1],'color',color(n,:))
-        Trel = interp1(timevec/1000,Tm-Tm[1],TrelObs_time);
-        R_b(n) = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2));
+        Ur_b[n] = Ur
+        Tm = CoolingModel(p,Rc,Ur,Hmvec,dt,timevec)
+
+        plotTrel = downsample(Tm-Tm[1],50)
+        if n == n_difficulties
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
+        else
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
+        end
+        Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
+        R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    xlabel('Age (Ga)'); ylabel('\Delta T');
-    colormap(cmap)
-    cb = colorbar;
-    cb.Label.String = 'log_{10}(\eta_L/Rc^3)';
-    caxis([minDiff,maxDiff])
-    formatfigure;
-    fig = gcf;
-    fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)];
-    set(fig,'renderer','painters')
-    saveas(fig,'CoolingCurveVsDifficultyHighRes.pdf')
-
-    figure;
-    xlabel('log_{10}(\eta_L/Rc^3)');
-    xlim([minDiff,maxDiff])
-    yyaxis left
-    plot(log10(p.eta_L./Rc_t.^3),Ur_b)
-    ylabel('Best-fit Ur');
-    yyaxis right
-    plot(log10(p.eta_L./Rc_t.^3),R_b)
-    ylabel('Sum squared residual');
-    formatfigure;
-    fig = gcf;
-    fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)];
-    saveas(gcf,'Ur=f(Difficulty).pdf')
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    xlims!(h,(0,4))
+    ylims!(h,(-20,250))
+    display(h)
+    savefig(h,"CoolingCurveVsDifficultyHighRes.pdf")
 
 
-    ## --- Explore nl/Rc3 space - smaller range
+    # figure
+    # xlabel('log_{10}(\eta_L/Rc^3)')
+    # xlim([minDiff,maxDiff])
+    # yyaxis left
+    # plot(log10(p.eta_L./Rc_t.^3),Ur_b)
+    # ylabel('Best-fit Ur')
+    # yyaxis right
+    # plot(log10(p.eta_L./Rc_t.^3),R_b)
+    # ylabel('Sum squared residual')
+    # formatfigure
+    # fig = gcf
+    # fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)]
+    # saveas(gcf,'Ur=f(Difficulty).pdf')
 
-    p.eta_L = 1E23; # Plate viscsity (Pa s)
-    nSteps = 20;
-    dUr = 1E-9;
 
-    nDifficulties = 5;
-    minDiff = 4.5;
-    maxDiff = 6.5;
-    Rc_t = (p.eta_L./(10.^linspace(minDiff,maxDiff,nDifficulties))).^(1/3);
-    Ur_b = Array{Float64}(size(Rc_t));
+## --- Explore nl/Rc3 space - smaller range
 
-    load viridis
-    cmap = flipud(viridis(1:212,:));
-    color = interpColor(cmap,nDifficulties);
-    figure; errorbar(TrelObs_time,TrelObs,2*TrelObs_sigma,'.r')
-    for n=1:nDifficulties
-        Rc = Rc_t(n);
-        Ur = 0.5;
-        for i=1:nSteps-1;
-            ll = CoolingModelLL(p, Rc,Ur,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-            llp = CoolingModelLL(p, Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
-            dll_dUr = (llp-ll)/dUr;
-            Ur = Ur - ll/dll_dUr/2;
+    nSteps = 20
+    dUr = 1E-9
+    n_difficulties = 5
+    minDiff = 4.5
+    maxDiff = 6.5
+    difficulies = linspace(minDiff,maxDiff,n_difficulties)
+
+    Rc_t = (p.eta_L ./ (10 .^ difficulies)).^(1/3)
+    Ur_b = Array{Float64}(size(Rc_t))
+    R_b = Array{Float64}(size(Rc_t))
+
+    cmap = cgrad(flipdim(viridis[1:212],1))
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkred, markersize=2, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
+    for n=1:n_difficulties
+        Rc = Rc_t[n]
+        Ur = 0.5
+        for i=1:nSteps-1
+            ll = CoolingModelLL(p, Rc,Ur,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+            llp = CoolingModelLL(p, Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+            dll_dUr = (llp-ll)/dUr
+            Ur = Ur - ll/dll_dUr/2
         end
 
-        Ur_b[n] = Ur;
-        Tm = CoolingModel(p,Rc,Ur,Hmvec,dt,timevec);
-        hold on; plot(timevec/1000,Tm-Tm[1],'color',color(n,:))
+        Ur_b[n] = Ur
+        Tm = CoolingModel(p,Rc,Ur,Hmvec,dt,timevec)
+
+        plotTrel = downsample(Tm-Tm[1],50)
+        if n == n_difficulties
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
+        else
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
+        end
+        Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
+        R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    xlabel('Age (Ga)'); ylabel('\Delta T (C)');
-    colormap(cmap)
-    cb = colorbar;
-    cb.Label.String = 'log_{10}(\eta_L/Rc^3)';
-    caxis([minDiff,maxDiff])
-    formatfigure;
-    fig = gcf;
-    fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)];
-    saveas(gcf,'CoolingCurveVsDifficultyScale.pdf')
-    ylim([-20 320])
-    delete(cb)
-    saveas(gcf,'CoolingCurveVsDifficulty.pdf')
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    xlims!(h,(0,4))
+    ylims!(h,(-20,250))
+    display(h)
+    savefig(h,"CoolingCurveVsDifficulty.pdf")
