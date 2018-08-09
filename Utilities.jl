@@ -30,10 +30,60 @@ mutable struct Parameters
     Xm::Float64 # Mantle heat capacity correction for average temperature
     Xc::Float64 # Core heat capacity correction for average temperature
 
-    eta_L::Float64
+    eta_L::Float64 # Lithospheric viscosity (Pa s)
+
+    lambda40K::Float64   # K-40 decay constant (1/years)
+    lambda87Rb::Float64  # Rb-87 decay constant (1/years)
+    lambda235U::Float64  # U-235 decay constant (1/years)
+    lambda238U::Float64  # U-338 decay constant (1/years)
+    lambda232Th::Float64 # Th-232 decay constant (1/years)
 end
 
-Parameters(x) = Parameters(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)
+Parameters(x) = Parameters(x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x)
+Parameters() = Parameters(8.3145, 9.8, 3.1556926e7, 1.602176565e-13, 6.022e23, 4.0e24, 2.0e24, 6.371e6, 1.0e6, 1000.0, 800.0, 3500.0, 12300.0, 2.5e-5, 8.6e-7, 3773.15, 1.0e19, 0.2, 30.0, 1573.15, 1.0e21, 400000.0, 800000.0, 3.0, 1.2, 1.11, 1.0e23, 5.552729156131902e-10, 1.4203835667211993e-11, 9.845840632953767e-10, 1.551358953804712e-10, 4.933431890106372e-11)
+
+    # Define parameters
+    # p = Parameters(0) # Create struct
+    # p.R = 8.3145; # Universal gas constant (J/Mol/K)
+    # p.g = 9.8; # Gravitational acceleration (m/s^2)
+    # p.s_yr = 31556926; # Seconds per year
+    # p.J_MeV=1.602176565E-13; # Joules per megaelectron-volt
+    # p.mol=6.022E23; # Avogadro's number (Atoms per mole)
+    #
+    # p.Mm = 4E24; # Mass of mantle (kg)
+    # p.Mc = 2E24; # Mass of core (kg)
+    # p.Re = 6371E3; # Radius of Earth (m)
+    # p.Rp = 1000E3; # Radius of Davies' "plume feeding area"
+    # p.C_m = 1000;  # Specific heat of mantle (J/kg/C)
+    # p.C_c = 800;  # Specific heat of core (J/kg/C)
+    # p.rho_m = 3500; # Density of mantle (kg/m^3)
+    # p.rho_c = 12300; # Density of core (kg/m^3)
+    #
+    # p.alpha = 2.5E-5; # Thermal expansion coefficient
+    # p.kappa = 0.86E-6; # Thermal diffusivity (m^2/s)
+    #
+    # p.Trl = 3500+273.15; # Reference temperature, lower mantle (C)
+    # p.mur_l = 1E19; # Reference viscosity, lower mantle (Pa s)
+    # p.nc = 1/5; # core exponent
+    # p.Kc = 30; # Condutivity (W/m/C)
+    #
+    # p.Tru = 1300+273.15; # Reference temperature, upper mantle (C)
+    # p.mur_u = 1E21; # Reference viscosity, upper mantle (Pa s)
+    # p.Ea = 400E3; # Activation energy (upper mantle) (J/mol)
+    # p.Ha = 800E3; # Activation enthalpy (lower mantle) (J/mol)
+    # p.Km = 3; # Conductivity (W/m/C)
+    # p.Xm = 1.2; # Mantle heat capacity correction for average temperature
+    # p.Xc = 1.11; # Core heat capacity correction for average temperature
+    #
+    # p.eta_L = 1E23; # Plate viscsity (Pa s)
+    #
+    # p.lambda40K  = log(2) / 1.2483E9 # K-40 decay constant (1/years)
+    # p.lambda87Rb = log(2) / 4.88E10  # Rb-87 decay constant (1/years)
+    # p.lambda235U = log(2) / 7.04E8   # U-235 decay constant (1/years)
+    # p.lambda238U = log(2) / 4.468E9  # U-238 decay constant (1/years)
+    # p.lambda232Th = log(2) / 1.405E10 # Th-232 decay constant (1/years)
+    # # Done defining parameters
+
 
 function CoolingModel(p::Parameters, Rc, Ur, Hm, dt, timevec)
     a_c = 4pi * Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc

@@ -7,40 +7,8 @@
 
 ## --- Define physical parameters
 
-    p = Parameters(0) # Create struct
-    p.R = 8.3145; # Universal gas constant (J/Mol/K)
-    p.g = 9.8; # Gravitational acceleration (m/s^2)
-    p.s_yr = 31556926; # Seconds per year
-    p.J_MeV=1.602176565E-13; # Joules per megaelectron-volt
-    p.mol=6.022E23; # Avogadro's number (Atoms per mole)
-
-    p.Mm = 4E24; # Mass of mantle (kg)
-    p.Mc = 2E24; # Mass of core (kg)
-    p.Re = 6371E3; # Radius of Earth (m)
-    p.Rp = 1000E3; # Radius of Davies' "plume feeding area"
-    p.C_m = 1000;  # Specific heat of mantle (J/kg/C)
-    p.C_c = 800;  # Specific heat of core (J/kg/C)
-    p.rho_m = 3500; # Density of mantle (kg/m^3)
-    p.rho_c = 12300; # Density of core (kg/m^3)
-
-    p.alpha = 2.5E-5; # Thermal expansion coefficient
-    p.kappa = 0.86E-6; # Thermal diffusivity (m^2/s)
-
-    p.Trl = 3500+273.15; # Reference temperature, lower mantle (C)
-    p.mur_l = 1E19; # Reference viscosity, lower mantle (Pa s)
-    p.nc = 1/5; # core exponent
-    p.Kc = 30; # Condutivity (W/m/C)
-
-    p.Tru = 1300+273.15; # Reference temperature, upper mantle (C)
-    p.mur_u = 1E21; # Reference viscosity, upper mantle (Pa s)
-    p.Ea = 400E3; # Activation energy (upper mantle) (J/mol)
-    p.Ha = 800E3; # Activation enthalpy (lower mantle) (J/mol)
-    p.Km = 3; # Conductivity (W/m/C)
-    p.Xm = 1.2; # Mantle heat capacity correction for average temperature
-    p.Xc = 1.11; # Core heat capacity correction for average temperature
-
+    p = Parameters()
     p.eta_L = 1E23; # Plate viscsity (Pa s)
-    # Done defining parameters
 
 ## --- Load observed cooling against which to fit
 
@@ -58,25 +26,19 @@
     timevec = collect(0:dt:4000);
 
     # Heat production
-    lambda40K = log(2) / 1.2483E9
-    lambda87Rb = log(2) / 4.88E10
-    lambda235U = log(2) / 7.04E8
-    lambda238U = log(2) / 4.468E9
-    lambda232Th = log(2) / 1.405E10
-
     # Composition: Bulk Silicate Earth
-    K40i  = 0.00012 .* mcdbse["K"]  .* exp.(lambda40K  .* timevec*10^6);
-    Rb87i = 0.27835 .* mcdbse["Rb"] .* exp.(lambda87Rb .* timevec*10^6);
-    U235i = 0.00720 .* mcdbse["U"]  .* exp.(lambda235U .* timevec*10^6);
-    U238i = 0.99274 .* mcdbse["U"]  .* exp.(lambda238U .* timevec*10^6);
-    Th232i = mcdbse["Th"] .* exp.(lambda232Th .* timevec*10^6)
+    K40i  = 0.00012 .* mcdbse["K"]  .* exp.(p.lambda40K  .* timevec*10^6);
+    Rb87i = 0.27835 .* mcdbse["Rb"] .* exp.(p.lambda87Rb .* timevec*10^6);
+    U235i = 0.00720 .* mcdbse["U"]  .* exp.(p.lambda235U .* timevec*10^6);
+    U238i = 0.99274 .* mcdbse["U"]  .* exp.(p.lambda238U .* timevec*10^6);
+    Th232i = mcdbse["Th"] .* exp.(p.lambda232Th .* timevec*10^6)
 
     # Mantle heat production in W/Kg, from Rybach, 1985
-    Hmvec = 1000 .* K40i   ./10^6 .* lambda40K/p.s_yr  .* (0.6*0.8928 + 1.460*0.1072)*p.J_MeV*p.mol/40 +
-        1000 .* Rb87i  ./10^6 .* lambda87Rb/p.s_yr .* 1/3*0.283*p.J_MeV*p.mol/87 +
-        1000 .* U235i  ./10^6 .* lambda235U/p.s_yr .* 45.26*p.J_MeV*p.mol/235 +
-        1000 .* U238i  ./10^6 .* lambda238U/p.s_yr .* 46.34*p.J_MeV*p.mol/238 +
-        1000 .* Th232i ./10^6 .* lambda232Th/p.s_yr .* 38.99*p.J_MeV*p.mol/232
+    Hmvec = 1000 .* K40i   ./10^6 .* p.lambda40K/p.s_yr  .* (0.6*0.8928 + 1.460*0.1072)*p.J_MeV*p.mol/40 +
+        1000 .* Rb87i  ./10^6 .* p.lambda87Rb/p.s_yr .* 1/3*0.283*p.J_MeV*p.mol/87 +
+        1000 .* U235i  ./10^6 .* p.lambda235U/p.s_yr .* 45.26*p.J_MeV*p.mol/235 +
+        1000 .* U238i  ./10^6 .* p.lambda238U/p.s_yr .* 46.34*p.J_MeV*p.mol/238 +
+        1000 .* Th232i ./10^6 .* p.lambda232Th/p.s_yr .* 38.99*p.J_MeV*p.mol/232
 
 ## --- Run Newton's method
 
@@ -122,7 +84,7 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
     ylims!(h,(-20, 300))
     xlims!(h,(0,4))
     display(h)
@@ -150,7 +112,7 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -181,7 +143,7 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="")
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -227,7 +189,7 @@
         Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
         R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -287,7 +249,7 @@
         Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
         R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)",fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="Delta T (C)")
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
