@@ -22,19 +22,19 @@
     Rc = 750E3 # Plate bending radius (km)
     dUr = 1E-9 # Urey ratio step size
 
-    nSteps = 20
-    Ur = Array{Float64}(nSteps)
+    nNewton = 20
+    Ur = Array{Float64}(nNewton)
     Ur[1] = 0.5
-    for i = 1:nSteps-1
+    for i = 1:nNewton-1
         ll = coolingmodel_LL(p,Rc,Ur[i],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
         llp = coolingmodel_LL(p,Rc,Ur[i]+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma);
         dll_dUr = (llp-ll)/dUr;
         Ur[i+1] = Ur[i] - ll/dll_dUr/2;
     end
 
-    Tm = coolingmodel(p, Rc, Ur[nSteps], Hmvec, dt, timevec)
+    Tm = coolingmodel(p, Rc, Ur[nNewton], Hmvec, dt, timevec)
     h = plot(TrelObs_time, TrelObs, yerror=2*TrelObs_sigma, seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
-    plot!(h, timevec/1000,Tm-Tm[1], label="Model", xlabel="Age (Ma)", ylabel="\\Delta T (C)", legend=:topleft)
+    plot!(h, timevec/1000,Tm-Tm[1], label="Model", xlabel="Age (Ma)", ylabel="\\Delta T (C)", legend=:topleft, framestyle=:box)
     xlims!(h,(0,4))
     display(h)
     print("Urey Ratio convergence:\n")
@@ -61,8 +61,8 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
-    ylims!(h,(-20, 300))
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box)
+    ylims!(h,(-20,250))
     xlims!(h,(0,4))
     display(h)
 
@@ -89,7 +89,7 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box)
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
@@ -120,18 +120,73 @@
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="")
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box)
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
     savefig(h,"d=5.6variableUr.pdf")
 
-## --- Explore nl/Rc3 space
+## --- Explore nl/Rc3 space - small range
+
+    nNewton = 20
+    dUr = 1E-9
+    n_difficulties = 20
+    minDiff = 4.5
+    maxDiff = 6.5
+    difficulies = linspace(minDiff,maxDiff,n_difficulties)
+    p = Parameters()
+    # p.Q_addtl = 15E12 # Add 15 TW additional heat flux
+
+    # p.Q_addtl = 10E12 # Add 10 TW additional heat flux
+    # p.Qc_now = 12E12 # Turn up present core heat flux from 6 TW
+    # p.Tc_now = 6400+273.15 # Turn up present core temperature from 4400 K
+
+    # p.Qc_now = 22E12 # Turn up present core heat flux from 6 TW
+    # p.Tc_now = 6400+273.15 # Turn up present core temperature from 4400 K
+
+    p.Qm_now = 13E12 # Turn down present-day mantle heat flux from 35 TW.
+
+    Rc_t = (p.eta_L ./ (10 .^ difficulies)).^(1/3)
+    Ur_b = Array{Float64}(size(Rc_t))
+    R_b = Array{Float64}(size(Rc_t))
+
+    cmap = cgrad(flipdim(viridis[1:212],1))
+    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
+    plottime = downsample(timevec/1000,50)
+    for n=1:n_difficulties
+        # Find best-fit Ur for this Rc_t[n]
+        Ur_b[n] = coolingmodel_Newton_Ur(p,nNewton,Rc_t[n],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+        Tm = coolingmodel(p,Rc_t[n],Ur_b[n],Hmvec,dt,timevec)
+
+        # Plot results
+        plotTrel = downsample(Tm-Tm[1],50)
+        if n == n_difficulties
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
+        else
+            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
+        end
+        # Keep track of results
+        Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
+        R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
+    end
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box)
+    xlims!(h,(0,4))
+    ylims!(h,(-20,250))
+    display(h)
+    savefig(h,"CoolingCurveVsDifficulty.pdf")
+
+    # Two-axis plot for best-fit d and Ur
+    h = plot(xlabel="log_{10}(\\eta_L/Rc^3)",ylabel="Best-fit Urey ratio",xlims=(minDiff,maxDiff))
+    plot!(log10.(p.eta_L./Rc_t.^3),Ur_b,label="",grid=:off,color=:darkred)
+    plot!(twinx(),log10.(p.eta_L./Rc_t.^3),R_b,label="",ylabel="Sum squared residual",xlims=(minDiff,maxDiff),grid=:off)
+    display(h)
+
+## --- Explore nl/Rc3 space -- Full range
 
     p.eta_L = 1E23 # Plate viscsity (Pa s)
-    nSteps = 40
 
-    n_difficulties = 50
+    nNewton = 40
+    n_difficulties = 100
     minDiff = 4
     maxDiff = 9
     difficulies = linspace(minDiff,maxDiff,n_difficulties)
@@ -145,77 +200,32 @@
     plottime = downsample(timevec/1000,50)
     for n=1:n_difficulties
         # Find best-fit Ur for this Rc_t[n]
-        Ur_b[n] = coolingmodel_Newton_Ur(p,nSteps,Rc_t[n],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
+        Ur_b[n] = coolingmodel_Newton_Ur(p,nNewton,Rc_t[n],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
         Tm = coolingmodel(p,Rc_t[n],Ur_b[n],Hmvec,dt,timevec)
 
         # Plot results
         plotTrel = downsample(Tm-Tm[1],50)
         if n == n_difficulties
             plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
-        else
+        elseif mod(n,2)==0
             plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
         end
         # Keep track of results
         Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
         R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box)
     xlims!(h,(0,4))
     ylims!(h,(-20,250))
     display(h)
     savefig(h,"CoolingCurveVsDifficultyHighRes.pdf")
 
     # Two-axis plot for best-fit d and Ur
-    # figure
-    # xlabel('log_{10}(\eta_L/Rc^3)')
-    # xlim([minDiff,maxDiff])
-    # yyaxis left
-    # plot(log10(p.eta_L./Rc_t.^3),Ur_b)
-    # ylabel('Best-fit Ur')
-    # yyaxis right
-    # plot(log10(p.eta_L./Rc_t.^3),R_b)
-    # ylabel('Sum squared residual')
-    # formatfigure
-    # fig = gcf
-    # fig.PaperSize = [fig.PaperPosition(3) fig.PaperPosition(4)]
-    # saveas(gcf,'Ur=f(Difficulty).pdf')
-
-## --- Explore nl/Rc3 space - smaller range
-
-    nSteps = 20
-    dUr = 1E-9
-    n_difficulties = 5
-    minDiff = 4.5
-    maxDiff = 6.5
-    difficulies = linspace(minDiff,maxDiff,n_difficulties)
-
-    Rc_t = (p.eta_L ./ (10 .^ difficulies)).^(1/3)
-    Ur_b = Array{Float64}(size(Rc_t))
-    R_b = Array{Float64}(size(Rc_t))
-
-    cmap = cgrad(flipdim(viridis[1:212],1))
-    h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
-    plottime = downsample(timevec/1000,50)
-    for n=1:n_difficulties
-        # Find best-fit Ur for this Rc_t[n]
-        Ur_b[n] = coolingmodel_Newton_Ur(p,nSteps,Rc_t[n],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
-        Tm = coolingmodel(p,Rc_t[n],Ur_b[n],Hmvec,dt,timevec)
-
-        # Plot results
-        plotTrel = downsample(Tm-Tm[1],50)
-        if n == n_difficulties
-            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
-        else
-            plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="")
-        end
-        # Keep track of results
-        Trel = linterp1(timevec/1000,Tm-Tm[1],TrelObs_time)
-        R_b[n] = sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
-    end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)")
-    xlims!(h,(0,4))
-    ylims!(h,(-20,250))
+    h = plot(xlabel="log_{10}(\\eta_L/Rc^3)",ylabel="Best-fit Urey ratio",xlims=(minDiff,maxDiff))
+    plot!(log10.(p.eta_L./Rc_t.^3),Ur_b,label="",grid=:off,color=:darkred)
+    plot!(twinx(),log10.(p.eta_L./Rc_t.^3),R_b,label="",ylabel="Sum squared residual",xlims=(minDiff,maxDiff),grid=:off)
     display(h)
-    savefig(h,"CoolingCurveVsDifficulty.pdf")
+    savefig(h,"Ur=f(Difficulty).pdf")
+
 
 ## --- End of File
