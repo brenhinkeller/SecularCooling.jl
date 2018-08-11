@@ -52,10 +52,11 @@
         Xc::Float64 # Core heat capacity correction for average temperature
 
         eta_L::Float64 # Lithospheric viscosity (Pa s)
+        Rc::Float64 # Lithspheric plate bending radius of curvature (m)
         Q_addtl::Float64 # Constant additional heat flux to base of mantle (for sensitivity testing)
     end
 
-    Parameters() = Parameters(8.3145, 9.8, 3.1556926e7, 1.602176565e-13, 6.022e23, 5.552729156131902e-10, 1.4203835667211993e-11, 9.845840632953767e-10, 1.551358953804712e-10, 4.933431890106372e-11, 4.0e24, 2.0e24, 6.371e6, 1.0e6, 1000.0, 800.0, 3500.0, 12300.0, 3.5e13, 6.0e12, 1573.15, 4673.15, 2.5e-5, 8.6e-7, 3773.15, 1.0e19, 0.2, 30.0, 1573.15, 1.0e21, 400000.0, 800000.0, 3.0, 1.2, 1.11, 1.0e23, 0.0)
+    Parameters() = Parameters(8.3145, 9.8, 3.1556926e7, 1.602176565e-13, 6.022e23, 5.552729156131902e-10, 1.4203835667211993e-11, 9.845840632953767e-10, 1.551358953804712e-10, 4.933431890106372e-11, 4.0e24, 2.0e24, 6.371e6, 1.0e6, 1000.0, 800.0, 3500.0, 12300.0, 3.5e13, 6.0e12, 1573.15, 4673.15, 2.5e-5, 8.6e-7, 3773.15, 1.0e19, 0.2, 30.0, 1573.15, 1.0e21, 400000.0, 800000.0, 3.0, 1.2, 1.11, 1.0e23, 500, 0.0)
 
     # # Define parameters
     # p = Parameters() # Create struct
@@ -81,7 +82,7 @@
     # p.Qm_now = 35*10^12 # Present mantle heat flux (W)
     # p.Qc_now = 6*10^12 # Present core heat flux (W)
     # p.Tm_now = 1300+273.15 # Present mantle temperature (K)
-    # p.Tc_now = 4400+273.15 # Present core temperature (K)
+    # p.Tc_now = 4400+273.15 # Present core temperature (K). I/O boundary 6230 +/- 500 according to 10.1126/science.1233514
     #
     # p.alpha = 2.5E-5; # Thermal expansion coefficient
     # p.kappa = 0.86E-6; # Thermal diffusivity (m^2/s)
@@ -100,6 +101,7 @@
     # p.Xc = 1.11; # Core heat capacity correction for average temperature
     #
     # p.eta_L = 1E23; # Plate viscsity (Pa s)
+    # p.RC = 500; # Lithspheric plate bending radius of curvature (m)
     # p.Q_addtl = 0 # Additional (constant) heat flux
     # # Done defining parameters
 
@@ -126,10 +128,10 @@
 ## --- Model functions
 
     # Finite-difference cooling model
-    function coolingmodel(p::Parameters, Rc, Ur, Hm, dt, timevec)
+    function coolingmodel(p::Parameters, Ur, Hm, dt, timevec)
 
         # Consolidated core constants
-        a_c = 4pi * Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
+        a_c = 4pi * p.Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
 
         # Allocate arrays
         Qc = Array{Float64}(size(timevec))
@@ -163,7 +165,7 @@
         Beta_d = Qm[1] /
             (4*pi*p.Re^2*p.Km*Tm[1]*
                 (p.g*p.rho_m*p.alpha*Tm[1]*dp[1] /
-                    (4*mu_u[1]*p.kappa + (4/3*p.eta_L*p.kappa)*(dp[1]/Rc)^3)
+                    (4*mu_u[1]*p.kappa + (4/3*p.eta_L*p.kappa)*(dp[1]/p.Rc)^3)
                 )^(1/2)
             )
 
@@ -196,7 +198,7 @@
             # Mantle heat flux
             Qm[i] = Beta_d*4*pi*p.Re^2*p.Km*Tm[i] *
                 sqrt(abs(p.g*p.rho_m*p.alpha*Tm[i]*dp[i]/(4*mu_u[i]*p.kappa +
-                    (4/3*p.eta_L*p.kappa)*(dp[i]/Rc)^3)
+                    (4/3*p.eta_L*p.kappa)*(dp[i]/p.Rc)^3)
                 ))
 
             # Core and mantle cooling rates by energy balance
@@ -206,7 +208,7 @@
                 (p.Xm * p.Mm * p.C_m) * p.s_yr * 1E6
         end
 
-        return Tm
+        return (Tm, Tc, Qm, Qc, dp)
     end
 
     # Return the signed log-likelihood for a given temperature curve
@@ -220,17 +222,29 @@
     end
 
     # Run model and calculate its signed log likelihood
-    function coolingmodel_LL(p::Parameters, Rc, Ur, Hm, dt, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
-        Tm = coolingmodel(p, Rc, Ur, Hmvec, dt, timevec)
+    function coolingmodel_LL(p::Parameters, Ur, Hm, dt, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
+        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur, Hmvec, dt, timevec)
         return signed_LL(Tm, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
     end
 
-    function coolingmodel_Newton_Ur(p,nSteps,Rc,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
+    # Return the residual for a given temperature curve
+    function resid(Tm,timevec,TrelAve_time,TrelAve,TrelAve_sigma)
+        Trel = linterp1(timevec,Tm-Tm[1],TrelAve_time)
+        return sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
+    end
+
+    # Run model and calculate its residual
+    function coolingmodel_resid(p::Parameters, Ur, Hm, dt, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
+        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur, Hmvec, dt, timevec)
+        return resid(Tm, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
+    end
+
+    function coolingmodel_Newton_Ur(p::Parameters,nSteps,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
         Ur = 0.5
         dUr = 1E-9
         for i=1:nSteps-1
-            ll = coolingmodel_LL(p,Rc,Ur,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
-            llp = coolingmodel_LL(p,Rc,Ur+dUr,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
+            ll = coolingmodel_LL(p,Ur,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
+            llp = coolingmodel_LL(p,Ur+dUr,Hmvec,dt,timevec,TrelObs_time,TrelObs,TrelObs_sigma)
             dll_dUr = (llp-ll)/dUr
             Ur = Ur - ll/dll_dUr/2
         end
