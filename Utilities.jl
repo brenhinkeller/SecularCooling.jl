@@ -26,8 +26,8 @@
         Mc::Float64 # Mass of core (kg)
         Re::Float64 # Radius of Earth (m)
         Rp::Float64 # Radius of "plume feeding area"
-        C_m::Float64  # Specific heat of mantle (J/kg/C)
-        C_c::Float64  # Specific heat of mantle (J/kg/C)
+        Cp_m::Float64  # Specific heat of mantle (J/kg/C)
+        Cp_c::Float64  # Specific heat of mantle (J/kg/C)
         rho_m::Float64 # Density of mantle (kg/m^3)
         rho_c::Float64 # Density of mantle (kg/m^3)
         Qm_now::Float64 # Present mantle heat flux (W)
@@ -75,8 +75,8 @@
     # p.Mc = 2E24; # Mass of core (kg)
     # p.Re = 6371E3; # Radius of Earth (m)
     # p.Rp = 1000E3; # Radius of Davies' "plume feeding area"
-    # p.C_m = 1000;  # Specific heat of mantle (J/kg/C)
-    # p.C_c = 800;  # Specific heat of core (J/kg/C)
+    # p.Cp_m = 1000;  # Specific heat of mantle (J/kg/C)
+    # p.Cp_c = 800;  # Specific heat of core (J/kg/C)
     # p.rho_m = 3500; # Density of mantle (kg/m^3)
     # p.rho_c = 12300; # Density of core (kg/m^3)
     # p.Qm_now = 35*10^12 # Present mantle heat flux (W)
@@ -174,9 +174,9 @@
 
         # Initial core and mantle cooling rates
         dTc_dt[1] = (p.Mc.*0 - Qc[1]) /
-            (p.Xc * p.Mc * p.C_c) * p.s_yr*1E6
+            (p.Xc * p.Mc * p.Cp_c) * p.s_yr*1E6
         dTm_dt[1] = (p.Mm.*Hm[1] + Qc[1] - Qm[1]) /
-            (p.Xm * p.Mm * p.C_m) * p.s_yr * 1E6
+            (p.Xm * p.Mm * p.Cp_m) * p.s_yr * 1E6
 
         for i=2:length(timevec)
             Tm[i] = Tm[i-1] - dTm_dt[i-1]*dt # New mantle temperature
@@ -203,9 +203,9 @@
 
             # Core and mantle cooling rates by energy balance
             dTc_dt[i] = (p.Mc.*0 - Qc[i]) /
-                (p.Xc * p.Mc * p.C_c) * p.s_yr * 1E6
+                (p.Xc * p.Mc * p.Cp_c) * p.s_yr * 1E6
             dTm_dt[i] = (p.Mm.*Hm[i] + Qc[i] + p.Q_addtl - Qm[i]) /
-                (p.Xm * p.Mm * p.C_m) * p.s_yr * 1E6
+                (p.Xm * p.Mm * p.Cp_m) * p.s_yr * 1E6
         end
 
         return (Tm, Tc, Qm, Qc, dp)
