@@ -134,15 +134,15 @@
         a_c = 4pi * p.Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
 
         # Allocate arrays
-        Qc = Array{Float64}(size(timevec))
-        Qm = Array{Float64}(size(timevec))
-        dTm_dt = Array{Float64}(size(timevec))
-        dTc_dt = Array{Float64}(size(timevec))
-        mu_u = Array{Float64}(size(timevec))
-        mu_l = Array{Float64}(size(timevec))
-        Tm = Array{Float64}(size(timevec))
-        Tc = Array{Float64}(size(timevec))
-        dp = Array{Float64}(size(timevec))
+        Qc = Array{Float64}(undef, size(timevec))
+        Qm = Array{Float64}(undef, size(timevec))
+        dTm_dt = Array{Float64}(undef, size(timevec))
+        dTc_dt = Array{Float64}(undef, size(timevec))
+        mu_u = Array{Float64}(undef, size(timevec))
+        mu_l = Array{Float64}(undef, size(timevec))
+        Tm = Array{Float64}(undef, size(timevec))
+        Tc = Array{Float64}(undef, size(timevec))
+        dp = Array{Float64}(undef, size(timevec))
 
         # ---  Variable parameters to adjust --- #
         Qm[1] = p.Qm_now # Present mantle heat flux (W)
@@ -212,11 +212,11 @@
     end
 
     # Return the signed log-likelihood for a given temperature curve
-    function signed_LL(Tm,timevec,TrelAve_time,TrelAve,TrelAve_sigma)
-        Trel = linterp1(timevec,Tm-Tm[1],TrelAve_time)
+    function signed_LL(Tm, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
+        Trel = linterp1(timevec, Tm .- Tm[1], TrelAve_time)
         signed_LL = sum(sign.(Trel - TrelAve) .*
-                (Trel - TrelAve).^2./(2.*TrelAve_sigma.^2)
-                -log.(sqrt.(2*pi*TrelAve_sigma))
+                (Trel - TrelAve).^2 ./ (2 .* TrelAve_sigma.^2)
+                .- log.(sqrt.(2*pi*TrelAve_sigma))
             )
         return signed_LL
     end
@@ -228,9 +228,9 @@
     end
 
     # Return the residual for a given temperature curve
-    function resid(Tm,timevec,TrelAve_time,TrelAve,TrelAve_sigma)
-        Trel = linterp1(timevec,Tm-Tm[1],TrelAve_time)
-        return sum((Trel-TrelObs).^2./(2.*TrelObs_sigma.^2))
+    function resid(Tm, timevec, TrelAve_time, TrelAve, TrelAve_sigma)
+        Trel = linterp1(timevec, Tm .- Tm[1], TrelAve_time)
+        return sum((Trel-TrelObs).^2 ./ (2 .* TrelObs_sigma.^2))
     end
 
     # Run model and calculate its residual

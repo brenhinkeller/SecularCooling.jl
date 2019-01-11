@@ -22,9 +22,9 @@
     dUr = 1E-9 # Urey ratio step size
     p.Rc = 750E3 # Plate bending radius (km)
 
-    Ur = Array{Float64}(nNewton)
+    Ur = Array{Float64}(undef, nNewton)
     Ur[1] = 0.5 # Initial guess for Urey ratio
-    for i = 1:nNewton-1
+    for i = 1:(nNewton-1)
         ll = coolingmodel_LL(p,Ur[i],Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
         llp = coolingmodel_LL(p,Ur[i]+dUr,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
         dll_dUr = (llp-ll)/dUr
@@ -33,7 +33,7 @@
 
     (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur[nNewton], Hmvec, dt, timevec)
     h = plot(TrelObs_time, TrelObs, yerror=2*TrelObs_sigma, seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
-    plot!(h, timevec/1000,Tm-Tm[1], label="Model", xlabel="Age (Ma)", ylabel="\\Delta T (C)", framestyle=:box, legend=:topleft)
+    plot!(h, timevec/1000, Tm .- Tm[1], label="Model", xlabel="Age (Ma)", ylabel="\\Delta T (C)", framestyle=:box, legend=:topleft)
     xlims!(h,(0,4))
     display(h)
     print("Urey Ratio convergence:\n")
@@ -54,15 +54,15 @@
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
     plottime = downsample(timevec/1000,50)
     for i=1:nSteps
-        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p,Ur[i],Hmvec,dt,timevec)
-        plotTrel = downsample(Tm-Tm[1],50)
+        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur[i], Hmvec, dt, timevec)
+        plotTrel = downsample(Tm .- Tm[1], 50)
         if i==1
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
         else
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="") #color=cmap[i]
         end
     end
-    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box,grid:off,fg_color_legend=:white)
+    plot!(h,legend=:topleft,xlabel="Age (Ma)",ylabel="\\Delta T (C)",framestyle=:box,grid=:off,fg_color_legend=:white)
     ylims!(h,(-20,250))
     xlims!(h,(0,4))
     display(h)
@@ -85,8 +85,8 @@
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
     plottime = downsample(timevec/1000,50)
     for i=1:nSteps
-        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p,Ur[i],Hmvec,dt,timevec)
-        plotTrel = downsample(Tm-Tm[1],50)
+        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur[i], Hmvec, dt, timevec)
+        plotTrel = downsample(Tm .- Tm[1], 50)
         if i==1
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model") #color=cmap[i]
         else
@@ -117,10 +117,10 @@
     plottime = downsample(timevec/1000,50)
     for i=1:nSteps
         # Calculate the mantle temperature curve
-        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p,Ur[i],Hmvec,dt,timevec)
+        (Tm, Tc, Qm, Qc, dp) = coolingmodel(p, Ur[i], Hmvec, dt, timevec)
 
         # Plot the resutls
-        plotTrel = downsample(Tm-Tm[1],50)
+        plotTrel = downsample(Tm .- Tm[1], 50)
         if i==1
             plot!(h,plottime,plotTrel,line_z=Ur[i],line=(cmap),label="Model")
         else
@@ -162,12 +162,12 @@
     descrip = "Qm13"
 
     Rc_t = (p.eta_L ./ (10.0.^difficulies)).^(1/3)
-    Ur_best = Array{Float64}(size(Rc_t))
-    residual_best = Array{Float64}(size(Rc_t))
-    residual_offset_mille = Array{Float64}(size(Rc_t))
-    residual_offset_cent = Array{Float64}(size(Rc_t))
+    Ur_best = Array{Float64}(undef, size(Rc_t))
+    residual_best = Array{Float64}(undef, size(Rc_t))
+    residual_offset_mille = Array{Float64}(undef, size(Rc_t))
+    residual_offset_cent = Array{Float64}(undef, size(Rc_t))
 
-    cmap = cgrad(flipdim(viridis[1:212],1))
+    cmap = cgrad(reverse(viridis[1:212]))
     h1 = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
     h2 = plot(xlabel="Age (Ma)",ylabel="Core temperature (K)",framestyle=:box)
     h3 = plot(xlabel="Age (Ma)",ylabel="Core heat flux (W)",framestyle=:box)
@@ -187,7 +187,7 @@
         (Tm, Tc, Qm, Qc, dp) = coolingmodel(p,Ur_best[n],Hmvec,dt,timevec)
 
         # Plot results
-        plotTrel = downsample(Tm-Tm[1],50)
+        plotTrel = downsample(Tm .- Tm[1], 50)
         if n == n_difficulties
             plot!(h1,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
         else
@@ -239,12 +239,12 @@
     descrip = "Qm13"
 
     Rc_t = (p.eta_L ./ (10 .^ difficulies)).^(1/3)
-    Ur_best = Array{Float64}(size(Rc_t))
-    residual_best = Array{Float64}(size(Rc_t))
-    residual_offset_mille = Array{Float64}(size(Rc_t))
-    residual_offset_cent = Array{Float64}(size(Rc_t))
+    Ur_best = Array{Float64}(undef, size(Rc_t))
+    residual_best = Array{Float64}(undef, size(Rc_t))
+    residual_offset_mille = Array{Float64}(undef, size(Rc_t))
+    residual_offset_cent = Array{Float64}(undef, size(Rc_t))
 
-    cmap = cgrad(flipdim(viridis[1:212],1))
+    cmap = cgrad(reverse(viridis[1:212]))
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
     plottime = downsample(timevec/1000,50)
     @time for n=1:n_difficulties
@@ -261,7 +261,7 @@
         (Tm, Tc, Qm, Qc, dp) = coolingmodel(p,Ur_best[n],Hmvec,dt,timevec)
 
         # Plot results
-        plotTrel = downsample(Tm-Tm[1],50)
+        plotTrel = downsample(Tm .- Tm[1], 50)
         if n == n_difficulties
             plot!(h,plottime,plotTrel,line_z=difficulies[n],line=(cmap),label="Model")
         elseif mod(n,2)==0
@@ -289,10 +289,10 @@
     nSteps = 10^3
     burnin = 5*10^2
 
-    d_dist = Array{Float64}(nSteps)
-    Ur_dist = Array{Float64}(nSteps)
-    Trel_dist = Array{Float64}(nSteps,length(TrelObs_time))
-    ll_dist = Array{Float64}(nSteps)
+    d_dist = Array{Float64}(undef, nSteps)
+    Ur_dist = Array{Float64}(undef, nSteps)
+    Trel_dist = Array{Float64}(undef, nSteps,length(TrelObs_time))
+    ll_dist = Array{Float64}(undef, nSteps)
     acceptancedist = fill(false,nSteps)
 
     p = Parameters() # Start with fresh parameters
@@ -305,7 +305,7 @@
     p.Rc = (p.eta_L/(10.0^d))^(1/3)
     Ur = coolingmodel_Newton_Ur(p,nNewton,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
     Tm = coolingmodel(p, Ur, Hmvec, dt, timevec)[1]
-    Trel = linterp1(timevec,Tm-Tm[1],TrelObs_time*1000)
+    Trel = linterp1(timevec,Tm .- Tm[1], TrelObs_time*1000)
     ll = sum( -(Trel - TrelObs).^2 ./ (2*TrelObs_sigma.^2) - log.(sqrt.(2*pi*TrelObs_sigma)))
 
     d_dist[1] = d
@@ -366,14 +366,14 @@
     jumpingsigmafactor = 2.718
 
     acceptancedist = fill(false,nSteps)
-    ll_dist = Array{Float64}(nSteps)
-    d_dist = Array{Float64}(nSteps)
-    Ur_dist = Array{Float64}(nSteps)
-    Qm_now_dist = Array{Float64}(nSteps)
-    Qc_now_dist = Array{Float64}(nSteps)
-    Tc_now_dist = Array{Float64}(nSteps)
-    Q_addtl_dist = Array{Float64}(nSteps)
-    Trel_dist = Array{Float64}(nSteps,length(TrelObs_time))
+    ll_dist = Array{Float64}(undef, nSteps)
+    d_dist = Array{Float64}(undef, nSteps)
+    Ur_dist = Array{Float64}(undef, nSteps)
+    Qm_now_dist = Array{Float64}(undef, nSteps)
+    Qc_now_dist = Array{Float64}(undef, nSteps)
+    Tc_now_dist = Array{Float64}(undef, nSteps)
+    Q_addtl_dist = Array{Float64}(undef, nSteps)
+    Trel_dist = Array{Float64}(undef, nSteps,length(TrelObs_time))
 
     # Initial guesses
     # d = 6
@@ -409,9 +409,9 @@
     Ur = coolingmodel_Newton_Ur(p,20,Hmvec,dt,timevec,TrelObs_time*1000,TrelObs,TrelObs_sigma)
     # Ur = 0.3289
     Tm = coolingmodel(p, Ur, Hmvec, dt, timevec)[1]
-    Trel = linterp1(timevec,Tm-Tm[1],TrelObs_time*1000)
+    Trel = linterp1(timevec,Tm .- Tm[1], TrelObs_time*1000)
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
-    plot!(h,timevec/1000,Tm-Tm[1],label="Model: Ur=$(signif(Ur,3)),d=$(signif(d,3))")
+    plot!(h,timevec/1000,Tm .- Tm[1], label="Model: Ur=$(signif(Ur,3)),d=$(signif(d,3))")
     plot!(h,xlabel="Age (Ga)",ylabel="\\Delta T (C)",grid=:off,legend=:topleft,fg_color_legend=:white)
     summarystring = " d:\t\t$(round(d,2))\n" *
         " Ur: $(round(Ur,3))\n\n" *
@@ -529,7 +529,7 @@
 
     # Plot results
     lines_to_plot = 500
-    cmap = cgrad(flipdim(viridis[128:end],1))
+    cmap = cgrad(reverse(viridis[128:end]))
     dsfactor = round(Int,(nSteps-burnin)/lines_to_plot)
     zdata = downsample(d_dist[burnin:end],dsfactor)'
     Trel_dist_plot = downsample(Trel_dist[burnin:end,:],dsfactor,1)'
