@@ -1,7 +1,7 @@
     1+1
 ## ---
 
-    using StatGeochem
+    using StatGeochem, Statistics
     include("Utilities.jl")
     using Plots; gr()
     using ProgressMeter: @showprogress
@@ -440,7 +440,7 @@
         savefig(h,"MCMC_firstproposal.pdf")
 
         ll = LL(Trel,TrelObs,TrelObs_sigma*2) + LL(Ur,0.3289,0.01) + LL(d,5,5)
-            LL(Qm/1E12,35,0.001) + LL(Qc/1E12,10,10) + LL(Tc,4400+273.15,500)
+            LL(Qm/1E12,35,10) + LL(Qc/1E12,10,10) + LL(Tc,4400+273.15,500)
 
         # Accept and record first proposal
         ll_dist[1] = ll
@@ -481,9 +481,9 @@
 
                 # Calculate log likelihood of new proposal
                 ll_prop = LL(Trel_prop,TrelObs,TrelObs_sigma*2) + LL(Ur_prop,0.3289,0.01) + LL(d_prop,5,5) +
-                   LL(p.Qm_now/1E12,35,0.001) + LL(p.Qc_now/1E12,10,10) + LL(p.Tc_now,4400+273.15,500)
+                   LL(p.Qm_now/1E12,35,10) + LL(p.Qc_now/1E12,10,10) + LL(p.Tc_now,4400+273.15,500)
             catch
-                @warn("Model failed to converge!")
+                @info("Model failed to converge, trying again")
             end
 
             # Accept or reject proposal based on likelihood
@@ -552,13 +552,13 @@
     # Plot results
     lines_to_plot = 500
     cmap = cgrad(reverse(viridis[128:end]))
-    dsfactor = round(Int,(nSteps-burnin)/lines_to_plot)
-    zdata = downsample(d_dist[burnin:end],dsfactor)'
-    Trel_dist_plot = downsample(Trel_dist[burnin:end,:],dsfactor,1)'
-    h = plot(TrelObs_time,Trel_dist_plot,line_z=zdata,line=(cmap),linealpha=0.3,label="")
-    plot!(h,TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
-    plot!(h,timevec/1000,Tm_mu-Tm_mu[1],color=:black,label="Model")
-    plot!(h,xlabel="Age (Ma)", ylabel="\\Delta T (C)",xlims=(0,4),framestyle=:box, grid=:off, legend=:topleft, fg_color_legend=:white)
+    dsfactor = round(Int, (nSteps-burnin)/lines_to_plot)
+    zdata = downsample(d_dist[burnin:end], dsfactor)'
+    Trel_dist_plot = downsample(Trel_dist[burnin:end,:], dsfactor,1)'
+    h = plot(TrelObs_time, Trel_dist_plot, line_z=zdata, line=(cmap), linealpha=0.3, label="")
+    plot!(h, TrelObs_time, TrelObs, yerror=2*TrelObs_sigma, seriestype=:scatter, color=:darkblue, markersize=2, markerstrokecolor=:auto, label="Data")
+    plot!(h, timevec/1000, Tm_mu .- Tm_mu[1], color=:black, label="Model")
+    plot!(h, xlabel="Age (Ma)", ylabel="\\Delta T (C)" ,xlims=(0,4), framestyle=:box, grid=:off, legend=:topleft, fg_color_legend=:white)
     summarystring = " d:\t\t$(round(d_mu,sigdigits=2))\n" *
         " Ur: $(round(Ur_mu,sigdigits=3))\n\n" *
         " Qc: $(round(Qc_now_mu/1E12,sigdigits=1))\n" *
@@ -570,7 +570,7 @@
 
     # Print results
     resultstring = " Ur: $(round(Ur_mu,sigdigits=6)) +/- $(round(Ur_sigma,sigdigits=6))\n" *
-     " d: $(round(d_mu,4)) +/- $(round(d_sigma,sigdigits=4))\n" *
+     " d: $(round(d_mu,sigdigits=4)) +/- $(round(d_sigma,sigdigits=4))\n" *
      " Qm_now: $(round(Qm_now_mu,sigdigits=4)) +/- $(round(Qm_now_sigma,sigdigits=4))\n" *
      " Qc_now: $(round(Qc_now_mu,sigdigits=4)) +/- $(round(Qc_now_sigma,sigdigits=4))\n" *
      " Tc_now: $(round(Tc_now_mu,sigdigits=4)) +/- $(round(Tc_now_sigma,sigdigits=4))\n" *
@@ -585,8 +585,8 @@ age = [68.05095
     454.21213
     497.12744
     742.07745
-    802.8435
-    801.0422
+    802.84350
+    801.04220
     1283.9265
     1578.8737
     1743.4226
@@ -594,12 +594,12 @@ age = [68.05095
     2027.5404
     2463.7925
     2463.8606
-    2465.689
-    2665.877
+    2465.6890
+    2665.8770
     2662.3572
-    2762.47
+    2762.4700
     2758.9314
-    2937.624
+    2937.6240
     3030.6372
     3030.6677
     3291.5479
@@ -612,9 +612,9 @@ temp = [1389.6439
     1368.0992
     1368.0703
     1379.9874
-    1406.165
+    1406.1650
     1371.5565
-    1348.893
+    1348.8930
     1629.0829
     1550.2771
     1663.5535
@@ -623,7 +623,7 @@ temp = [1389.6439
     1443.8795
     1558.3923
     1626.3839
-    1541.639
+    1541.6390
     1635.8745
     1625.1124
     1687.1411
