@@ -20,7 +20,7 @@
 
     nNewton = 20 # Number of Newton's method iterations
     dUr = 1E-9 # Urey ratio step size
-    p.Rc = 750E3 # Plate bending radius (km)
+    p.Rc = 650E3 # Plate bending radius (km)
 
     Ur = Array{Float64}(undef, nNewton)
     Ur[1] = 0.5 # Initial guess for Urey ratio
@@ -370,7 +370,7 @@
         return sum( -(x_prop .- x).^2 ./ (2*sigma.^2) .- log.(sqrt.(2*pi*sigma)))
     end
 
-    nSteps = 10^5
+    nSteps = 10^6
     burnin = 5*10^4
     jumpingsigmafactor = 2.718  # This can be adjusted to optimize acceptance likelihood
 
@@ -392,7 +392,7 @@
     p.Qc_now = 10E12
     p.Tc_now = 4400+273
     p.Q_addtl = 0E12
-    descrip = "Qm35-0.001_Qc10-10"
+    descrip = "Qm35-10_Qc10-10"
 
     # Define a function to conduct a full MCMC inversion
     function MCMC_SMC(nSteps, d, jumpingsigmafactor, p)
@@ -440,7 +440,7 @@
         savefig(h,"MCMC_firstproposal.pdf")
 
         ll = LL(Trel,TrelObs,TrelObs_sigma*2) + LL(Ur,0.3289,0.01) + LL(d,5,5)
-            LL(Qm/1E12,35,10) + LL(Qc/1E12,10,10) + LL(Tc,4400+273.15,500)
+            LL(Qm_now/1E12,35,10) + LL(Qc_now/1E12,10,10) + LL(Tc_now,4400+273.15,500)
 
         # Accept and record first proposal
         ll_dist[1] = ll

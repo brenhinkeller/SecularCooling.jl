@@ -56,7 +56,7 @@
         Q_addtl::Float64 # Constant additional heat flux to base of mantle (for sensitivity testing)
     end
 
-    Parameters() = Parameters(8.3145, 9.8, 3.1556926e7, 1.602176565e-13, 6.022e23, 5.552729156131902e-10, 1.4203835667211993e-11, 9.845840632953767e-10, 1.551358953804712e-10, 4.933431890106372e-11, 4.0e24, 2.0e24, 6.371e6, 1.0e6, 1000.0, 800.0, 3500.0, 12300.0, 3.5e13, 6.0e12, 1573.15, 4673.15, 2.5e-5, 8.6e-7, 3773.15, 1.0e19, 0.2, 30.0, 1573.15, 1.0e21, 400000.0, 800000.0, 3.0, 1.2, 1.11, 1.0e23, 500, 0.0)
+    Parameters() = Parameters(8.3145, 9.8, 3.1556926e7, 1.602176565e-13, 6.022e23, 5.552729156131902e-10, 1.4203835667211993e-11, 9.845840632953767e-10, 1.551358953804712e-10, 4.933431890106372e-11, 4.0e24, 2.0e24, 6.371e6, 1.0e6, 1000.0, 800.0, 3500.0, 12300.0, 3.5e13, 6.0e12, 1573.15, 4673.15, 2.5e-5, 8.6e-7, 3773.15, 1.0e19, 0.2, 30.0, 1573.15, 1.0e21, 400000.0, 800000.0, 3.0, 1.2, 1.11, 1.0e23, 450000.0, 0.0)
 
     # # Define parameters
     # p = Parameters() # Create struct
@@ -101,7 +101,7 @@
     # p.Xc = 1.11; # Core heat capacity correction for average temperature
     #
     # p.eta_L = 1E23; # Plate viscsity (Pa s)
-    # p.RC = 500; # Lithspheric plate bending radius of curvature (m)
+    # p.Rc = 450000; # Lithspheric plate bending radius of curvature (m)
     # p.Q_addtl = 0 # Additional (constant) heat flux
     # # Done defining parameters
 
@@ -130,9 +130,6 @@
     # Finite-difference cooling model
     function coolingmodel(p::Parameters, Ur, Hm, dt, timevec)
 
-        # Consolidated core constants
-        a_c = 4pi * p.Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
-
         # Allocate arrays
         Qc = Array{Float64}(undef, size(timevec))
         Qm = Array{Float64}(undef, size(timevec))
@@ -143,6 +140,9 @@
         Tm = Array{Float64}(undef, size(timevec))
         Tc = Array{Float64}(undef, size(timevec))
         dp = Array{Float64}(undef, size(timevec))
+
+        # Consolidated core constants
+        a_c = 4pi * p.Rc^2 * p.Kc * ((2 * p.g * p.rho_c * p.alpha) / (3 * p.kappa * p.Rp^2))^p.nc
 
         # ---  Variable parameters to adjust --- #
         Qm[1] = p.Qm_now # Present mantle heat flux (W)
