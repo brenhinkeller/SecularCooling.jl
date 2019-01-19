@@ -1,13 +1,17 @@
 ## --- Load observed cooling against which to fit
 
-    mcdbse = importdataset("mcdbse.csv",',')
-    # obs = importdataset("CoolingAverage.csv",',')
+    # McDonough bulk silicate earth
+    mcdbse = importdataset("data/mcdbse.csv",',')
+
+    # # Average cooling curve
+    # obs = importdataset("data/CoolingAverage.csv",',')
     # TrelObs_time = obs["Age"]/1000
     # TrelObs = obs["Trel"]
     # TrelObs_sigma = obs["Trel_sigma"]
     # TrelObs_sigma[1] = 0.5;
 
-    obs = importdataset("KellerSchoene.psv",'|')
+    # Keller and Schoene cooling curve
+    obs = importdataset("data/KellerSchoene.psv",'|')
     TrelObs_time = obs["Age"]/1000
     TrelObs = obs["T_p"] .- obs["T_p"][1]
     TrelObs_sigma = obs["T_p_sigma"]

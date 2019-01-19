@@ -7,25 +7,25 @@
 
     kernel_sigma = 330 # Myr
 
-    abbott = importdataset("Abbott.psv", '|')
+    abbott = importdataset("data/Abbott.psv", '|')
     abbott["Age_sigma"] = kernel_sigma * ones(size(abbott["Age"]))
 
-    herzberg = importdataset("Herzberg.psv",'|')
+    herzberg = importdataset("data/Herzberg.psv",'|')
     herzberg["Age_sigma"] = kernel_sigma * ones(size(herzberg["Age"]))
 
-    ganne = importdataset("Ganne_FeTi.psv",'|')
+    ganne = importdataset("data/Ganne_FeTi.psv",'|')
     ganne["Age_sigma"] = kernel_sigma * ones(size(ganne["Age"]))
 
-    condieHM = importdataset("CondieHM.psv",'|')
+    condieHM = importdataset("data/CondieHM.psv",'|')
     condieHM["Age_sigma"] = kernel_sigma * ones(size(condieHM["Age"]))
 
-    condieDM = importdataset("CondieDM.psv",'|')
+    condieDM = importdataset("data/CondieDM.psv",'|')
     condieDM["Age_sigma"] = kernel_sigma * ones(size(condieDM["Age"]))
 
-    condieEM = importdataset("CondieEM.psv",'|')
+    condieEM = importdataset("data/CondieEM.psv",'|')
     condieEM["Age_sigma"] = kernel_sigma * ones(size(condieEM["Age"]))
 
-    ks2012 = importdataset("KellerSchoene.psv",'|')
+    ks2012 = importdataset("data/KellerSchoene.psv",'|')
 
     kimura = Dict()
     kimura["Age"]  = [68.051, 144.932, 345.154, 454.212, 497.127, 742.077, 802.843, 801.042, 1283.93, 1578.87, 1743.42, 1873.8, 2027.54, 2463.79, 2463.86, 2465.69, 2665.88, 2662.36, 2762.47, 2758.93, 2937.62, 3030.64, 3030.67, 3291.55, 3398.95, 3398.98, 3470.46]
@@ -175,6 +175,6 @@
     CoolingAverage["Trel"] = T_ave .- T_ave[1]
     CoolingAverage["Trel_sigma"] = T_ave_sigma
     CoolingAverage["elements"] = collect(keys(CoolingAverage))
-    exportdataset(CoolingAverage, "CoolingAverage.csv", ',')
+    exportdataset(CoolingAverage, "data/CoolingAverage.csv", ',')
 
 ## --- End of File
