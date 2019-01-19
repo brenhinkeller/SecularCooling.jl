@@ -1,1 +1,1 @@
-# SecularCooling
+# SecularCooling.jl
