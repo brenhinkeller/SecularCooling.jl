@@ -48,7 +48,7 @@
     nSteps = 10
     Qrm_now_Min = 0.0
     Qrm_now_Max = 1.6E13
-    Qrm_now_vec = reverse(linspace(Qrm_now_Min, Qrm_now_Max, nSteps))
+    Qrm_now_vec = reverse(range(Qrm_now_Min, Qrm_now_Max, length=nSteps))
 
     cmap = cgrad((plasma[40:212]))
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
@@ -83,7 +83,7 @@
     # Qrm_now_Max = 2.6455E13
     # p.Rc = (p.eta_L / (10.0^5.5))^(1/3)
 
-    Qrm_now_vec = reverse(linspace(Qrm_now_Min, Qrm_now_Max, nSteps))
+    Qrm_now_vec = reverse(range(Qrm_now_Min, Qrm_now_Max, length=nSteps))
 
     cmap = cgrad((plasma[40:212]))
     h = plot(TrelObs_time,TrelObs,yerror=2*TrelObs_sigma,seriestype=:scatter, markersize=2, color=:darkblue, markerstrokecolor=:auto, label="Data")
@@ -110,7 +110,7 @@
     n_difficulties = 100
     minDiff = 4.5
     maxDiff = 6.5
-    difficulies = linspace(minDiff,maxDiff,n_difficulties)
+    difficulies = range(minDiff,maxDiff,length=n_difficulties)
     p = Parameters() # Default parameters
     descrip = "burnt-in"
 
@@ -187,11 +187,11 @@
 
 ## --- Explore nl/Rc3 space -- Full range
 
-    nNewton = 40
+    nNewton = 20
     n_difficulties = 100
     minDiff = 4
     maxDiff = 8
-    difficulies = linspace(minDiff,maxDiff,n_difficulties)
+    difficulies = range(minDiff,maxDiff,length=n_difficulties)
     p = Parameters()
     descrip = "default"
 
@@ -334,7 +334,7 @@
     # identical due to time-reversal symmetry, they lead to different ways of
     # exploring the parameter space
 
-    nSteps = 1*10^6
+    nSteps = 2*10^6
     burnin = 2*10^5
     jumpingsigmafactor = 2.718  # This can be adjusted to optimize acceptance likelihood
 
