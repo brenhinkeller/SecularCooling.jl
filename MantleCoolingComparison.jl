@@ -7,25 +7,25 @@
 
     kernel_sigma = 330 # Myr
 
-    abbott = importdataset("data/Abbott.psv", '|')
+    abbott = importdataset("data/Abbott.csv", '|', importas=:Dict)
     abbott["Age_sigma"] = kernel_sigma * ones(size(abbott["Age"]))
 
-    herzberg = importdataset("data/Herzberg.psv",'|')
+    herzberg = importdataset("data/Herzberg.csv",'|', importas=:Dict)
     herzberg["Age_sigma"] = kernel_sigma * ones(size(herzberg["Age"]))
 
-    ganne = importdataset("data/Ganne_FeTi.psv",'|')
+    ganne = importdataset("data/Ganne_FeTi.csv",'|', importas=:Dict)
     ganne["Age_sigma"] = kernel_sigma * ones(size(ganne["Age"]))
 
-    condieHM = importdataset("data/CondieHM.psv",'|')
+    condieHM = importdataset("data/CondieHM.csv",'|', importas=:Dict)
     condieHM["Age_sigma"] = kernel_sigma * ones(size(condieHM["Age"]))
 
-    condieDM = importdataset("data/CondieDM.psv",'|')
+    condieDM = importdataset("data/CondieDM.csv",'|', importas=:Dict)
     condieDM["Age_sigma"] = kernel_sigma * ones(size(condieDM["Age"]))
 
-    condieEM = importdataset("data/CondieEM.psv",'|')
+    condieEM = importdataset("data/CondieEM.csv",'|', importas=:Dict)
     condieEM["Age_sigma"] = kernel_sigma * ones(size(condieEM["Age"]))
 
-    ks2012 = importdataset("data/KellerSchoene.psv",'|')
+    ks2012 = importdataset("data/KellerSchoene.csv",'|', importas=:Dict)
 
     kimura = Dict()
     kimura["Age"]  = [68.051, 144.932, 345.154, 454.212, 497.127, 742.077, 802.843, 801.042, 1283.93, 1578.87, 1743.42, 1873.8, 2027.54, 2463.79, 2463.86, 2465.69, 2665.88, 2662.36, 2762.47, 2758.93, 2937.62, 3030.64, 3030.67, 3291.55, 3398.95, 3398.98, 3470.46]
